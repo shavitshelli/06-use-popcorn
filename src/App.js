@@ -330,6 +330,20 @@ function MovieDetails({ selecteId, onCloseMovie, onAddWatched, watched }) {
 
   useEffect(
     function () {
+      if (!title) return;
+
+      //this is access to index.html title tag
+      document.title = `Movie | ${title}`;
+
+      return () => {
+        document.title = "usePopcorn";
+      };
+    },
+    [title]
+  );
+
+  useEffect(
+    function () {
       async function getMovieDetails() {
         setIsLoading(true);
         const res = await fetch(
