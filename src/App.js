@@ -53,45 +53,76 @@ const average = (arr) =>
 const KEY = "b0c79806";
 
 export default function App() {
+  const [query, setQuery] = useState("");
   const [movies, setMovies] = useState([]);
   const [watched, setWatched] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const query = "me";
-
+  const tempQuery = "interstellar";
+  /*
+  //effects run only after browser paint ,
+  //the c log is a part of the render logic and is executed during render phase
+  //thus c will come before a
+  //a and be will be printed first because it comes first
   useEffect(function () {
-    // async function returns a promise thus we need to create a wraping anonimous function
-    // that will call tha async function
-    async function fetchMovies() {
-      try {
-        setIsLoading(true);
-        // fetch returns a promise
-        const res = await fetch(
-          `http://www.omdbapi.com/?apikey=${KEY}&s=${query}`
-        );
-        if (!res.ok) throw new Error("Somthing went wrong");
-
-        // ...json() returns a promise
-        const data = await res.json();
-        if (data.Response === "False") throw new Error("Movie not found");
-
-        setMovies(data.Search);
-        setIsLoading(false);
-        console.log(data.Search);
-      } catch (err) {
-        console.error(err.message);
-        setError(err.message);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    fetchMovies();
+    console.log("A - after init render");
   }, []);
+  useEffect(function () {
+    console.log("B - after every render");
+  });
+
+  console.log("C - during render");
+
+  useEffect(
+    function () {
+      console.log("D - sync with query");
+    },
+    [query]
+  );
+  */
+
+  useEffect(
+    function () {
+      // async function returns a promise thus we need to create a wraping anonimous function
+      // that will call tha async function
+      async function fetchMovies() {
+        try {
+          setIsLoading(true);
+          setError("");
+          // fetch returns a promise
+          const res = await fetch(
+            `http://www.omdbapi.com/?apikey=${KEY}&s=${query}`
+          );
+          if (!res.ok) throw new Error("Somthing went wrong");
+
+          // ...json() returns a promise
+          const data = await res.json();
+          if (data.Response === "False") throw new Error("Movie not found");
+
+          setMovies(data.Search);
+          setIsLoading(false);
+        } catch (err) {
+          console.error(err.message);
+          setError(err.message);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+
+      if (query.length < 3) {
+        setMovies([]);
+        setError("");
+        return;
+      }
+      fetchMovies();
+    },
+    [query]
+  );
 
   return (
     <>
       <NavBar>
-        <Search />
+        <Search query={query} setQuery={setQuery} />
         <NumResults movies={movies} />
       </NavBar>
 
@@ -149,9 +180,7 @@ function NumResults({ movies }) {
   );
 }
 
-function Search() {
-  const [query, setQuery] = useState("");
-
+function Search({ query, setQuery }) {
   return (
     <input
       className="search"
