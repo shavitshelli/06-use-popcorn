@@ -100,13 +100,17 @@ export default function App() {
     function () {
       // async function returns a promise thus we need to create a wraping anonimous function
       // that will call tha async function
+
+      const controller = new AbortController();
+
       async function fetchMovies() {
         try {
           setIsLoading(true);
           setError("");
           // fetch returns a promise
           const res = await fetch(
-            `http://www.omdbapi.com/?apikey=${KEY}&s=${query}`
+            `http://www.omdbapi.com/?apikey=${KEY}&s=${query}`,
+            { signal: controller.signal }
           );
           if (!res.ok) throw new Error("Somthing went wrong");
 
@@ -115,10 +119,13 @@ export default function App() {
           if (data.Response === "False") throw new Error("Movie not found");
 
           setMovies(data.Search);
+          setError("");
           setIsLoading(false);
         } catch (err) {
-          console.error(err.message);
-          setError(err.message);
+          if (err.name !== "AbortError") {
+            console.log(err.message);
+            setError(err.message);
+          }
         } finally {
           setIsLoading(false);
         }
@@ -129,7 +136,12 @@ export default function App() {
         setError("");
         return;
       }
+      handleCloseMovie();
       fetchMovies();
+
+      return function () {
+        controller.abort();
+      };
     },
     [query]
   );
@@ -286,7 +298,6 @@ function Movie({ movie, onSelectMovie }) {
     </li>
   );
 }
-
 function MovieDetails({ selecteId, onCloseMovie, onAddWatched, watched }) {
   const [movie, setMovie] = useState({});
   const [isLoading, setIsLoading] = useState(false);
@@ -327,6 +338,28 @@ function MovieDetails({ selecteId, onCloseMovie, onAddWatched, watched }) {
     onAddWatched(newWatchedMovie);
     onCloseMovie();
   }
+
+  //This effect is used to close the movie data box with esc key pressed
+  //We use an event listener attachment to know when escape is pressed
+  //the dependency array has to get the function onCloseMovie to work
+  //We need to use a cleanup function in order to cancel multiple events attached to the documennt with document.removeEventListener()
+  //we need to give the addEventListener , removeEventListener the exact sme function
+  //thus we use the callback function . placement of everything is important
+
+  useEffect(
+    function () {
+      function callback(e) {
+        if (e.code === "Escape") {
+          onCloseMovie();
+        }
+      }
+      document.addEventListener("keydown", callback);
+      return function () {
+        document.removeEventListener("keydown", callback);
+      };
+    },
+    [onCloseMovie]
+  );
 
   useEffect(
     function () {
