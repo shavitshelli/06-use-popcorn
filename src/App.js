@@ -9,10 +9,17 @@ const KEY = "b0c79806";
 export default function App() {
   const [query, setQuery] = useState("");
   const [movies, setMovies] = useState([]);
-  const [watched, setWatched] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [selecteId, setSelecteId] = useState(null);
+  //const [watched, setWatched] = useState([]);
+
+  //usestate can get a callback function that will get the function return value
+  //needs to be a pure function that not recuives args
+  const [watched, setWatched] = useState(function () {
+    const storedValue = localStorage.getItem("watched");
+    return JSON.parse(storedValue);
+  });
 
   /*
   //effects run only after browser paint ,
@@ -44,10 +51,21 @@ export default function App() {
   }
   function handleAddWatched(movie) {
     setWatched((watched) => [...watched, movie]);
+
+    // //because setwatched is a hook that happens asyncronously we need to pass [...watched, movie]
+    // //because a local storage stores key value pairs where value is a string we need JSON.stringify
+    // localStorage.setItem("watched", JSON.stringify([...watched, movie]));
   }
   function handleDeleteWatched(id) {
     setWatched((watched) => watched.filter((movie) => movie.imdbID !== id));
   }
+
+  useEffect(
+    function () {
+      localStorage.setItem("watched", JSON.stringify(watched));
+    },
+    [watched]
+  );
 
   useEffect(
     function () {
@@ -177,6 +195,12 @@ function NumResults({ movies }) {
 }
 
 function Search({ query, setQuery }) {
+  useEffect(function () {
+    const el = document.querySelector(".search");
+    console.log(el);
+    el.focus();
+  }, []);
+
   return (
     <input
       className="search"
